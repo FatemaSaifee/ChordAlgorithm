@@ -1,4 +1,5 @@
 import GenerateRandomStrings
+
 defmodule Chords do
     def main do
         if (Enum.count(System.argv())!=2) do
@@ -15,67 +16,135 @@ defmodule Chords do
                     IO.puts("Number of nodes should be positive")
                 end
             
-                createNodes(numNodes, numRequests)
-                createKeys(numNodes)
-                buildRing(numNodes)
+                pidHashMap = createNodes(numNodes, numRequests)
+                pidHashMap = List.keysort(pidHashMap, 1)
+                allKeys = createKeys(numNodes)
+                buildRing(pidHashMap)
+                assignKeysToNodes(allKeys, pidHashMap)
             end
         end
     end
 
     def createNodes(numNodes, numRequests) do
-        allNodes = Enum.map((1..numNodes), fn(x) ->
-            pid=start_node(numRequests)
-            hashPid = :crypto.hash(:sha256, pid) |> Base.encode16
+        # allHashedNodes = []
+        allHashedNodes = Enum.map((1..numNodes), fn(x) ->
+            pid=start_node()
+            pidStr  = Kernel.inspect(pid)
+            hashPid = :crypto.hash(:sha256, pidStr) |> Base.encode16
+            # allHashedNodes = allHashedNodes ++ [hashPid]
             updatePIDState(pid, hashPid)
             updateRequestState(pid, numRequests)
-            pid
+            {pid, hashPid}
         end)
+        allHashedNodes
     end
 
     def createKeys(numNodes) do
-        allNodes = Enum.map((1..numNodes), fn(x) ->
-            pid=start_node(numRequests)
-            hashPid = :crypto.hash(:sha256, pid) |> Base.encode16
-            updatePIDState(pid, hashPid)
-            updateRequestState(pid, numRequests)
-            pid
+        allKeys = Enum.map((1..2*numNodes), fn(x) ->
+            randomizer(5)
         end)
+        allKeys
     end
 
-    def buildRing(numNodes) do
+    def buildRing(pidHashMap) do
+        Enum.map(0..length(pidHashMap)-1, fn(x) ->
+            pid = elem(Enum.fetch!(pidHashMap, x), 0)
+            if x == length(pidHashMap)-1 do
+                hashSuccesor = elem(Enum.fetch!(pidHashMap, 0), 1)
+                updateSuccesorState(pid,hashSuccesor)
+            else
+                hashSuccesor = elem(Enum.fetch!(pidHashMap, x+1), 1)
+                updateSuccesorState(pid,hashSuccesor)
+            end
+        end)
+
+    end
+
+    def assignKeysToNodes(allKeys, pidHashMap) do
+        # Assign  a key to the node when hash of key is just less that hash of PID of the node
+        IO.inspect allKeys
+        IO.inspect pidHashMap
+       
+        Enum.each(allKeys, fn(key) -> 
+            hashedKey = :crypto.hash(:sha256, key) |> Base.encode16
+            count = 0
+             Enum.each(pidHashMap, fn(x) -> 
+                case elem(pidHashMap[count], 1) < hashedKey -> 
+                # if hashedKey > elem(x, 1) do
+                #     count = count + 1
+                #     # if count == 1 do
+                #     fetch_something()
+                #     updateKeyState(elem(x, 0), key)
+                #     break
+                #     # end
+                # end
+                # elem(pidHashMap[count], 1) < hashedKey
+                case count do
+                    x when x > 1 ->
+                        # count = count + 1
+                    x when x < 1 ->
+                        if hashedKey > elem(x, 1) do
+                            count = count + 1
+                            updateKeyState(elem(x, 0), key)
+                        end
+                end  
+             end)
+
+            
+        end)
+
+
         
+    end
+
+    def loop(p, i) do
+        case i in p do
+            true -> loop(p, i + 0.01)
+            false -> i
+        end
     end
 
     def init(:ok) do
         # {:ok, {hash(self), succesor, fingers[], keys[], numRequest}}
-        IO.puts numRequests
         {:ok, {'', '', [], [], 0}}
     end
 
-    def start_node(numRequests) do
-        {:ok,pid}=GenServer.start_link(__MODULE__, :ok,[numRequests])
+    def start_node() do
+        {:ok,pid}=GenServer.start_link(__MODULE__, :ok,[])
         pid
     end
 
     # update the Count for a process for Push Sum
-    def updateSuccesor(pid,succesor) do
-        GenServer.call(pid, {:UpdatePSCount,succesor})
+    def updateSuccesorState(pid,succesor) do
+        GenServer.call(pid, {:UpdateSuccesorState,succesor})
     end
 
-    def handle_call({:UpdateSuccesor,succesor}, _from ,state) do
-        {a,b,c,d} = state
-        state={a,succesor,c,d}
+    def handle_call({:UpdateSuccesorState,succesor}, _from ,state) do
+        {a,b,c,d,e} = state
+        state={a,succesor,c,d,e}
+        IO.inspect state
         {:reply,b, state}
     end
 
-    def updateRequest(pid,request) do
-        GenServer.call(pid, {:UpdateRequest,request})
+    def updateRequestState(pid,request) do
+        GenServer.call(pid, {:UpdateRequestState,request})
     end
 
-    def handle_call({:UpdateRequest,request}, _from ,state) do
-        {a,b,c,d} = state
+    def handle_call({:UpdateRequestState,request}, _from ,state) do
+        {a,b,c,d,e} = state
         state={a,b,c,d,request}
         {:reply,e, state}
+    end
+
+    def updateKeyState(pid, key) do
+         GenServer.call(pid, {:UpdateKeyState,key})
+    end
+
+    def handle_call({:UpdateKeyState,key}, _from ,state) do
+        {a,b,c,d,e} = state
+        state={a,b,c, d ++ [key],e}
+        IO.inspect state
+        {:reply,d ++ [key], state}
     end
 
     # def updateState(pid,state) do

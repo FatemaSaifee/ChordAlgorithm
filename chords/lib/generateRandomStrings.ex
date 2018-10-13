@@ -1,4 +1,5 @@
 defmodule GenerateRandomStrings do
+
   @moduledoc """
   Random string generator module.
   """
