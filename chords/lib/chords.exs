@@ -1,4 +1,5 @@
 import GenerateRandomStrings
+import Hash
 
 defmodule Chords do
     def main do
@@ -21,17 +22,16 @@ defmodule Chords do
                 allKeys = createKeys(numNodes)
                 buildRing(pidHashMap)
                 assignKeysToNodes(allKeys, pidHashMap)
+                createFingerTable(pidHashMap, numNodes)
             end
         end
     end
 
     def createNodes(numNodes, numRequests) do
-        # allHashedNodes = []
         allHashedNodes = Enum.map((1..numNodes), fn(x) ->
             pid=start_node()
             pidStr  = Kernel.inspect(pid)
-            hashPid = :crypto.hash(:sha256, pidStr) |> Base.encode16
-            # allHashedNodes = allHashedNodes ++ [hashPid]
+            hashPid = generateHash(pidStr)
             updatePIDState(pid, hashPid)
             updateRequestState(pid, numRequests)
             {pid, hashPid}
@@ -60,52 +60,65 @@ defmodule Chords do
 
     end
 
+    def createFingerTable(pidHashMap, numNodes) do
+        m = round :math.floor(:math.log2(numNodes))
+        Enum.map(0..length(pidHashMap)-1, fn(n) ->
+            currentnode = Enum.fetch!(pidHashMap, n)
+            # IO.inspect currentnode
+            intHashNodeId = elem(Integer.parse(elem(currentnode, 1), 16), 0)
+            Enum.each(0..m-1, fn(i) -> 
+                powerOfTwo = Kernel.trunc(:math.pow(2,i))
+                key = Integer.to_string(intHashNodeId+ powerOfTwo, 16)
+                # IO.puts key
+                if elem(Enum.fetch!(pidHashMap, length(pidHashMap)-1), 0) < key do
+                    successor = Enum.fetch!(pidHashMap, 0)
+                    map = %{"key": key, "value": successor }
+                    updateFingersState(elem(currentnode,0), map)
+                else
+                    IO.puts "greater condition"
+                    result = Enum.map(0..length(pidHashMap)-1, fn(x) -> 
+                        element = Enum.fetch!(pidHashMap, x)
+                        if key <elem(element,1) do
+                            x
+                        end
+                    end)
+
+                    # IO.inspect result
+                    successor = Enum.fetch!(pidHashMap, Enum.fetch!(Enum.reject(result, &is_nil/1),0))
+                    map = %{"key": key, "value": successor }
+                    updateFingersState(elem(currentnode,0), map)
+                end
+            end)
+        end)
+       
+    end
+
     def assignKeysToNodes(allKeys, pidHashMap) do
         # Assign  a key to the node when hash of key is just less that hash of PID of the node
-        IO.inspect allKeys
-        IO.inspect pidHashMap
+        # IO.inspect pidHashMap
        
         Enum.each(allKeys, fn(key) -> 
-            hashedKey = :crypto.hash(:sha256, key) |> Base.encode16
+            hashedKey = generateHash(key)
+            # IO.inspect  String.slice(hashedKey, 0..3)
             count = 0
-             Enum.each(pidHashMap, fn(x) -> 
-                case elem(pidHashMap[count], 1) < hashedKey -> 
-                # if hashedKey > elem(x, 1) do
-                #     count = count + 1
-                #     # if count == 1 do
-                #     fetch_something()
-                #     updateKeyState(elem(x, 0), key)
-                #     break
-                #     # end
-                # end
-                # elem(pidHashMap[count], 1) < hashedKey
-                case count do
-                    x when x > 1 ->
-                        # count = count + 1
-                    x when x < 1 ->
-                        if hashedKey > elem(x, 1) do
-                            count = count + 1
-                            updateKeyState(elem(x, 0), key)
-                        end
-                end  
-             end)
+            allHashedNodes = []
+            
+            result = Enum.map(0..length(pidHashMap)-1, fn(x) -> 
+                element = Enum.fetch(pidHashMap, x)
+                if hashedKey < elem(elem(element,1), 1) do
+                    x
+                end
+            end)
 
+            # IO.inspect result
+
+            # successor = Enum.fetch!(pidHashMap, Enum.fetch!(Enum.reject(result, &is_nil/1),0))
             
         end)
-
-
         
     end
 
-    def loop(p, i) do
-        case i in p do
-            true -> loop(p, i + 0.01)
-            false -> i
-        end
-    end
-
     def init(:ok) do
-        # {:ok, {hash(self), succesor, fingers[], keys[], numRequest}}
         {:ok, {'', '', [], [], 0}}
     end
 
@@ -114,7 +127,6 @@ defmodule Chords do
         pid
     end
 
-    # update the Count for a process for Push Sum
     def updateSuccesorState(pid,succesor) do
         GenServer.call(pid, {:UpdateSuccesorState,succesor})
     end
@@ -122,7 +134,6 @@ defmodule Chords do
     def handle_call({:UpdateSuccesorState,succesor}, _from ,state) do
         {a,b,c,d,e} = state
         state={a,succesor,c,d,e}
-        IO.inspect state
         {:reply,b, state}
     end
 
@@ -143,8 +154,19 @@ defmodule Chords do
     def handle_call({:UpdateKeyState,key}, _from ,state) do
         {a,b,c,d,e} = state
         state={a,b,c, d ++ [key],e}
-        IO.inspect state
+        # IO.inspect state
         {:reply,d ++ [key], state}
+    end
+
+    def updateFingersState(pid, finger) do
+         GenServer.call(pid, {:UpdateFingersState,finger})
+    end
+
+    def handle_call({:UpdateFingersState,finger}, _from ,state) do
+        {a,b,c,d,e} = state
+        state={a,b,c ++ [finger],d,e}
+        # IO.inspect finger.value
+        {:reply,c ++ [finger], state}
     end
 
     # def updateState(pid,state) do
