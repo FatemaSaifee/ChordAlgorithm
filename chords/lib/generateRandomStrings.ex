@@ -12,7 +12,7 @@ defmodule GenerateRandomStrings do
   * :upcase - generate upper case non-numeric random string
   * :downcase - generate lower case non-numeric random string
   ## Example
-      iex> Iurban.String.randomizer(20) //"Je5QaLj982f0Meb0ZBSK"
+      iex> GenerateRandomStrings.randomizer(20) //"Je5QaLj982f0Meb0ZBSK"
   """
   def randomizer(length, type \\ :all) do
     alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

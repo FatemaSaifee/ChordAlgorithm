@@ -7,3 +7,4 @@ defmodule Hash do
     def generateHash(key) do
         :crypto.hash(:sha256, key) |> Base.encode16 
     end
+end
