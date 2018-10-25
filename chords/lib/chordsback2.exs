@@ -4,14 +4,14 @@ import Hash
 
 defmodule Chords do
     @moduledoc """
-    Chord is a protocol and algorithm for a peer-to-peer distributed hash table.
-    A distributed hash table stores key-value pairs by assigning keys to different computers (known as "nodes"); a node will store the values for all the keys for which it is responsible.
+    Chord is a protocol and algorithm for a peer-to-peer distributed hash table. 
+    A distributed hash table stores key-value pairs by assigning keys to different computers (known as "nodes"); a node will store the values for all the keys for which it is responsible. 
     Chord specifies how keys are assigned to nodes, and how a node can discover the value for a given key by first locating the node responsible for that key.
     """
 
     @doc """
     Generate random string based on the given legth. It is also possible to generate certain type of randomise string using the options below:
-    * :numNodes -  the number of peers to be created in the peer to peer system
+    * :numNodes -  the number of peers to be created in the peer to peer system 
     * :numRequests - the number of requests each peer has to make.
     When all peers performed that many requests, the program can exit.
     Each peer shouldsend a request/second.
@@ -31,7 +31,7 @@ defmodule Chords do
             {numRequests, _} = Integer.parse(numRequests);
             if numNodes > :math.pow(2, 256) do
                 IO.puts("Number  of nodes should be less that 2^256")
-            else
+            else 
                 if numNodes <= 0 do
                     IO.puts("Number of nodes should be positive")
                 else
@@ -49,8 +49,8 @@ defmodule Chords do
                         assignKeysToNodes(allKeys, pidHashMap)
                         createFingerTables(pidHashMap, numNodes)
                         # :timer.sleep 10000
-                        Enum.each(pidHashMap, fn(x) ->
-                            # IO.inspect getState(elem(x, 0))
+                        Enum.each(pidHashMap, fn(x) -> 
+                            IO.inspect getState(elem(x, 0))
                         end)
                         startTransmit(pidHashMap, allKeys, numRequests)
                         # :timer.sleep 10000
@@ -65,10 +65,10 @@ defmodule Chords do
 
     @doc """
     Creates <numNodes> Nodes, i.e. Processes. We collect all the PIDs of these processes and hash them. Finally we return a list of PIDs and their respective hashes. Arguments are as follows:
-    * :numNodes -  the number of peers to be created in the peer to peer system
+    * :numNodes -  the number of peers to be created in the peer to peer system 
     * :numRequests - the number of requests each peer has to make.
     ## Example
-        iex> Chords.createNodes(2)
+        iex> Chords.createNodes(2) 
         //Output
         [
             {#PID<0.122.0>, "1A2EF8ADECC2BB0CF46A7E192A015C371C9D2B4902986205D0DABDCA98D431D7"},
@@ -90,9 +90,9 @@ defmodule Chords do
 
     @doc """
     create (2 * <numNodes>) random keys using GenerateRandomStrings module. Arguments are as follows:
-    * numNodes -  the number of peers to be created in the peer to peer system
+    * numNodes -  the number of peers to be created in the peer to peer system 
     ## Example
-        iex> Chords.createKeys(2)
+        iex> Chords.createKeys(2) 
         //Output
         ["4Le7C", "WKW2g", "TteAa", "kXi4L"]
     """
@@ -141,20 +141,20 @@ defmodule Chords do
     end
 
     @doc """
-    To avoid the linear search above, Chord implements a faster search method by requiring each node to keep a finger table containing up to m entries, recall that m is the number of bits in the hash key.
-    The i^{th} entry of node n will contain successor((n+2^{i-1}),mod,2^m).
-    The first entry of finger table is actually the node's immediate successor (and therefore an extra successor field is not needed).
+    To avoid the linear search above, Chord implements a faster search method by requiring each node to keep a finger table containing up to m entries, recall that m is the number of bits in the hash key. 
+    The i^{th} entry of node n will contain successor((n+2^{i-1}),mod,2^m). 
+    The first entry of finger table is actually the node's immediate successor (and therefore an extra successor field is not needed). 
     Every time a node wants to look up a key k, it will pass the query to the closest successor or predecessor (depending on the finger table) of  k in its finger table (the "largest" one on the circle whose ID is smaller than  k), until a node finds out the key is stored in its immediate successor.
-    With such a finger table, the number of nodes that must be contacted to find a successor in an N-node network is  O(log N).
+    With such a finger table, the number of nodes that must be contacted to find a successor in an N-node network is  O(log N). 
     """
     def createFingerTables(pidHashMap, numNodes) do
         m = round :math.floor(:math.log2(numNodes))
         Enum.map(0..length(pidHashMap)-1, fn(n) ->
             currentnode = Enum.fetch!(pidHashMap, n)
-            Enum.each(0..(m+1), fn(i) ->
-
+            Enum.each(0..(m-1), fn(i) -> 
+                
                 nextFinger = calcfinger(currentnode, i)
-
+               
                 if elem(Enum.fetch!(pidHashMap, length(pidHashMap)-1), 1) < nextFinger do
                     # IO.puts "Not greater condition"
                     successor = Enum.fetch!(pidHashMap, 0)
@@ -162,7 +162,7 @@ defmodule Chords do
                     updateFingersState(elem(currentnode,0), map)
                 else
                     # IO.puts "greater condition"
-                    result = Enum.map(0..length(pidHashMap)-1, fn(x) ->
+                    result = Enum.map(0..length(pidHashMap)-1, fn(x) -> 
                         element = Enum.fetch!(pidHashMap, x)
                         if  nextFinger < elem(element,1) do
                             x
@@ -175,44 +175,45 @@ defmodule Chords do
                 end
             end)
         end)
-
+       
     end
 
+    @doc """
+    Start the lookup task for each node in the Identity circle.
+    Each node must initiate <numRequests> lookup task with a random generated key from allKeys list
+    """
     def startTransmit(pidHashMap, allKeys, numRequests) do
         #  IO.inspect pidHashMap
         #  IO.inspect allKeys
-        totalCount = length(pidHashMap) * numRequests
-        Enum.map(0..numRequests-1, fn(i) ->
+        totalCount = length(pidHashMap) * numRequests 
+        Enum.map(0..numRequests-1, fn(i) -> 
             Enum.each(pidHashMap, fn(x) ->
-                Task.start(Chords,:lookup,[x, allKeys, totalCount])
+                Task.start(Chords,:lookup,[x, allKeys, totalCount, x])
+                # :timer.sleep 200
             end)
         end)
-
+        
     end
-
+    
     @doc false
-    def lookup(currentNode , keyList, totalCount) do
+    def lookup(currentNode , keyList, totalCount, startNode) do
         key = Enum.random(keyList)
-        # hops = :ets.update_counter(:table, "globalHopsCount", {2,1})
-
-        # IO.puts "_______st_________  #{key} :: #{String.slice(elem(currentNode, 1), 1..6)} ________en________"
-        # IO.inspect key
-        # IO.inspect currentNode
-        # IO.puts "________en________"
-
+        
         currentnodeId = elem(currentNode, 0)
+        startNodeId = elem(startNode, 0)
         {currentnodeHashId, successor, fingers, keys, numRequests} = getState(currentnodeId)
+        {_, _, _, _, startNumRequests} = getState(startNodeId)
 
         isPresent = Enum.member?(keys, key)
-
+        
         if isPresent do
             # found
             # IO.puts "key found #{key}"
-            updateRequestState(currentnodeId, numRequests-1, totalCount)
-            :timer.sleep 2
+            updateRequestState(startNodeId, startNumRequests-1, totalCount)
+            # :timer.sleep 2
         else
-            hops = :ets.update_counter(:table, "globalHopsCount", {2,1})
-
+            # hops = :ets.update_counter(:table, "globalHopsCount", {2,1})
+        
             Enum.map(0..length(fingers)-1, fn(x)->
                 if Enum.fetch!(fingers, x)[:nextFinger] > generateHash(key) do
                     newSuccessor = Enum.fetch!(fingers, x)[:successor]
@@ -224,29 +225,23 @@ defmodule Chords do
                         if isPresent do
                             # found
                             # IO.puts "key found #{key}"
-                            updateRequestState(successorId, numRequestsNew-1, totalCount)
-                            :timer.sleep 2
+                            updateRequestState(startNodeId, startNumRequests-1, totalCount)
+                            # :timer.sleep 2
                         else
                             # not found
                             # @param [key] - list of one key to be searched so that during recursion random gives us the same key
                             if x == 0 do
                                 prevFinger = Enum.fetch!(fingers, length(fingers)-1)[:successor]
-                                lookup(prevFinger, [key], totalCount)
+                                lookup(prevFinger, [key], totalCount, startNode)
                             else
                                 prevFinger = Enum.fetch!(fingers, x-1)[:successor]
-                                lookup(prevFinger, [key], totalCount)
+                                lookup(prevFinger, [key], totalCount, startNode)
                             end
-                        end
-                    else
-                        if x == 0 do
-                            prevFinger = Enum.fetch!(fingers, length(fingers)-1)[:successor]
-                            lookup(prevFinger, [key], totalCount)
-                        else
-                            prevFinger = Enum.fetch!(fingers, x-1)[:successor]
-                            lookup(prevFinger, [key], totalCount)
+                            hops = :ets.update_counter(:table, "globalHopsCount", {2,1})
+                            IO.puts "hops = #{hops}"
                         end
                     end
-
+                    
                 end
 
             end)
@@ -255,7 +250,7 @@ defmodule Chords do
 
     end
 
-
+    
 
     @doc """
     Assign  a key to the node when hash of key is just less that hash of PID of the node.
@@ -265,19 +260,19 @@ defmodule Chords do
     * pidHashMap -  list of {PID, hashedPID} Sorted on hashedPIDs
     """
     def assignKeysToNodes(allKeys, pidHashMap) do
-        Enum.each(allKeys, fn(key) ->
+        Enum.each(allKeys, fn(key) -> 
             hashedKey = generateHash(key)
             # IO.puts String.slice(hashedKey, 0..3)
             # IO.puts String.slice(elem(Enum.fetch!(pidHashMap, length(pidHashMap)-1), 1), 0..3)
             if hashedKey > elem(Enum.fetch!(pidHashMap, length(pidHashMap)-1), 1) do
                 succesor =  Enum.fetch!(pidHashMap, 0)
                 updateKeyState(elem(succesor, 0), key)
-
+                
             else
                 count = 0
                 allHashedNodes = []
-
-                result = Enum.map(0..length(pidHashMap)-1, fn(x) ->
+                
+                result = Enum.map(0..length(pidHashMap)-1, fn(x) -> 
                     element = Enum.fetch!(pidHashMap, x)
                     if hashedKey < elem(element,1) do
                         x
@@ -286,14 +281,14 @@ defmodule Chords do
                 successor = Enum.fetch!(pidHashMap, Enum.fetch!(Enum.reject(result, &is_nil/1),0))
                 updateKeyState(elem(successor, 0), key)
             end
-
+            
         end)
-
+        
     end
 
     @doc """
     Initiates the node with some default values as mentioned below:
-    * Hashed PID
+    * Hashed PID 
     * Hashed PID of it's successor
     * List of Fingers of the node in the Chord Ring
     * List of Keys stored
@@ -307,7 +302,7 @@ defmodule Chords do
     Spawns a new Genserver process and returns the PID
     ## Example
         iex> Chord.start_node()
-        Output:
+        Output: 
         #PID<0.122.0>
     """
     def start_node() do
@@ -341,17 +336,18 @@ defmodule Chords do
     def handle_call({:UpdateRequestState, request, totalCount}, _from, state) do
         {a,b,c,d,e} = state
         state={a,b,c,d,request}
+        # IO.puts "UpdateRequestState #{request}"
+        if request == 0 do 
+            Process.exit(self(), :kill)
+        end
         if request <= 0 do
             count = :ets.update_counter(:table, "globalCount", {2,1})
-            # IO.puts "Found key number #{count}"
-
-            divCount = getCount(totalCount)
-            # IO.inspect b
-            if count >= totalCount  do
-                result = round (:ets.update_counter(:table, "globalHopsCount", {2,0}))/divCount
-
-                IO.puts "The average number of hops (node connections) that have to be traversed to deliver a message is #{result}"
-                # :timer.sleep(1)
+            IO.puts "Found key number #{count}"
+            result = round (:ets.update_counter(:table, "globalHopsCount", {2,0}))/totalCount
+            
+            # IO.inspect b 
+            if count == totalCount  do
+                IO.puts "The average number of hops (node connections) that have to be traversed to deliever a message is #{result}. (#{totalCount})"
                 System.halt(1)
             end
         end
@@ -424,19 +420,44 @@ defmodule Chords do
         waitIndefinitely()
     end
 
+    # // ask node n to find the successor of id
+    # n.find successor(id)
+    #   if (id ∈ (n,successor])
+    #       return successor;
+    #   else
+    #       n' = closest preceding node(id);
+    #       return n'.find successor(id);
+    # 
+    # // search the local table for the highest predecessor of id
+    # n.closest preceding node(id)
+    #   for i = m downto 1
+    #   if (finger[i] ∈ (n,id))
+    #       return finger[i];
+    #   return n;
 
-    @doc """
-    UPdate finger table for all ring in a clockwise around successor fashion
-    finger is an array of dict {resp, key}
-        `resp` is the Node responsible for `key`
-    * newnode: new node which imply this update
-    * firstnode: node which launch the update
-    """
+    
+
+    # @doc """
+    # Returns the node responsible for finger k
+    # * m: Id length of the ring. (m = Key.idlength)
+    #     Ring is constituted of 2^m nodes maximum
+    # """
+    # def lookupfinger(k, currentnode, useOnlySucc \\ false) do
+    #     lookup(calcfinger(currentnode, k), currentnode, useOnlySucc)
+    # end
+
+    # @doc """
+    # UPdate finger table for all ring in a clockwise around successor fashion
+    # finger is an array of dict {resp, key}
+    #     `resp` is the Node responsible for `key`
+    # * newnode: new node which imply this update
+    # * firstnode: node which launch the update
+    # """
     # def updatefinger(currentnode, newnode, firstnode, numNodes) do
     #     m = round :math.floor(:math.log2(numNodes))
-    #     Enum.each(0..m-1, fn(i) ->
-
-    #     # for i in range(0, self.uid.idlength)
+    #     Enum.each(0..m-1, fn(i) -> 
+        
+    #     # for i in range(0, self.uid.idlength) 
     #         fingerkey = calcfinger(i)
     #         resp = lookup(fingerkey, useOnlySucc=True)
     #         # map = %{"resp": resp, "key": fingerkey}
@@ -447,12 +468,6 @@ defmodule Chords do
     #         updatefinger(successor, newnode, firstnode)
     #     end
     # end
-
-  def getCount(totalCount) do
-    # :math.ceil(totalCount*:math.pow(totalCount,1/4))
-    totalCount
-  end
-
 end
 
 Chords.main()
