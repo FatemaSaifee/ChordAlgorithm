@@ -70,22 +70,25 @@ Fast join/leave protocol (polylog time)
     	The argument is as follows:
 *  pidHashMap -  {PID, hashedPID} list Sorted on hashedPIDs
 
-####Example
+#### Example
 	iex> Chords.buildRing(pidHashMap) 
 
 
-###calcfinger(currentnode, k, m)
+### calcfinger(currentnode, k, m)
 Calculates the 256 bit value of next Finger of the <currentnode> node:
 * currentnode -  The Node whose finger table we need to form
 * k - Index of the finger in the finger table 
 * m - Total number of entries in each finger table
-####Example
+#### Example
+```
 	iex> Chords.createKeys(2) 
-####Output
+```
+#### Output
+```
 	["4Le7C", "WKW2g", "TteAa", "kXi4L"]
+```
 
-
-###createFingerTables(pidHashMap, numNodes)
+### createFingerTables(pidHashMap, numNodes)
 To avoid the linear search above, Chord implements a faster search method by requiring each node to keep a finger table containing up to m entries, recall that m is the number of bits in the hash key. 
 The i^{th} entry of node n will contain successor((n+2^{i-1}),mod,2^m). 
 The first entry of finger table is actually the node's immediate successor (and therefore an extra successor field is not needed). 
@@ -95,14 +98,14 @@ The argument is as follows:
 *  pidHashMap -  {PID, hashedPID} list Sorted on hashedPIDs
 * numNodes -  the number of peers to be created in the peer to peer system 
 
-###assignKeysToNodes(allKeys, pidHashMap)
+### assignKeysToNodes(allKeys, pidHashMap)
 Assign  a key to the node when hash of key is just less that hash of PID of the node.
 Key k is assigned to the first node whose key is ≥ k (called the successor node of key k) allKeys list in an N-node network is  O(log N). 
 The argument is as follows:
 * pidHashMap -  {PID, hashedPID} list Sorted on hashedPIDs
 allKeys -  list of all keys to be stored in the peer-to-peer system
 
-###startTransmit(pidHashMap, allKeys, numRequests)
+### startTransmit(pidHashMap, allKeys, numRequests)
 Start the lookup task for each node in the Identity circle.
 Each node must initiate <numRequests> lookup task with a random generated key from allKeys list in an N-node network is  O(log N). 
 The argument is as follows:
