@@ -43,11 +43,11 @@ Creates <numNodes> Nodes, i.e. Processes. We collect all the PIDs of these proce
     * numNodes -  the number of peers to be created in the peer to peer system 
     * numRequests - the number of requests each peer has to make.
 #### Example
-        ```
-        iex> Chords.createNodes(2) 
-        ```
+```
+iex> Chords.createNodes(2) 
+```
 #### Output
-  ```      
+```      
  {PID<0.122.0>, "1A2EF8ADECC2BB0CF46A7E192A015C371C9D2B4902986205D0DABDCA98D431D7"},
     {PID<0.124.0>, "77C54B3D07894668A8B46606860276204E95BE4F3172A1A8A697D195B2358AE5"}
 ]
