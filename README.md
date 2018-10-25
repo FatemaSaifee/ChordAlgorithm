@@ -14,13 +14,14 @@ Report For Bonus is present in Project3-Bonus Folder
 mix run lib/chords.exs <numberOfNodes> <numberOfRequests>
 
 For input numberOfNodes = 1000, numberOfRequests = 20
-
-‘mix run lib/chords.exs 1000 20’
+```
+mix run lib/chords.exs 1000 20
+```
 
 #### Output
-
+```
 The average number of hops (node connections) that have to be traversed to deliver a message is 27.
-
+```
 PS: Due to timer issues if in case you don’t see an output and the program terminates please try once more.
 
 ## Implementation
@@ -42,7 +43,9 @@ Creates <numNodes> Nodes, i.e. Processes. We collect all the PIDs of these proce
     * numNodes -  the number of peers to be created in the peer to peer system 
     * numRequests - the number of requests each peer has to make.
 #### Example
-        ```iex> Chords.createNodes(2) ```
+        ```
+        iex> Chords.createNodes(2) 
+        ```
 #### Output
   ```      
  {PID<0.122.0>, "1A2EF8ADECC2BB0CF46A7E192A015C371C9D2B4902986205D0DABDCA98D431D7"},
@@ -55,9 +58,13 @@ Creates <numNodes> Nodes, i.e. Processes. We collect all the PIDs of these proce
 create (2 * <numNodes>) random keys using GenerateRandomStrings module. Arguments are as follows:
 * numNodes -  the number of peers to be created in the peer to peer system 
 #### Example
-	``` iex> Chords.createKeys(2) ```
+``` 
+iex> Chords.createKeys(2)
+```
 #### Output
-	``` ["4Le7C", "WKW2g", "TteAa", "kXi4L"]```
+``` 
+["4Le7C", "WKW2g", "TteAa", "kXi4L"]
+```
 
 
 ### buildRing(pidHashMap) 
@@ -67,11 +74,13 @@ Load balancing via Consistent Hashing
  Small routing tables: log n
 Small routing delay: log n hops
 Fast join/leave protocol (polylog time)
-    	The argument is as follows:
+The argument is as follows:
 *  pidHashMap -  {PID, hashedPID} list Sorted on hashedPIDs
 
 #### Example
+```
 	iex> Chords.buildRing(pidHashMap) 
+```
 
 
 ### calcfinger(currentnode, k, m)
@@ -103,16 +112,18 @@ Assign  a key to the node when hash of key is just less that hash of PID of the 
 Key k is assigned to the first node whose key is ≥ k (called the successor node of key k) allKeys list in an N-node network is  O(log N). 
 The argument is as follows:
 * pidHashMap -  {PID, hashedPID} list Sorted on hashedPIDs
-allKeys -  list of all keys to be stored in the peer-to-peer system
+* allKeys -  list of all keys to be stored in the peer-to-peer system
 
 ### startTransmit(pidHashMap, allKeys, numRequests)
 Start the lookup task for each node in the Identity circle.
 Each node must initiate <numRequests> lookup task with a random generated key from allKeys list in an N-node network is  O(log N). 
 The argument is as follows:
 *  pidHashMap -  {PID, hashedPID} list Sorted on hashedPIDs
-allKeys -  List of all the Keys randomly generated from which a random key needs to be looked up
-numRequests - the number of requests each peer has to make.
-lookup(currentNode , keyList, totalCount, startNode)
+* allKeys -  List of all the Keys randomly generated from which a random key needs to be looked up
+* numRequests - the number of requests each peer has to make.
+
+
+### lookup(currentNode , keyList, totalCount, startNode)
 Search for the Key from keyList in the StartNode recursively with the help of currentNode and increment the number of hops for each lookup.
 The argument is as follows:
 *  currentnode -  The Node whose finger table we need to form
